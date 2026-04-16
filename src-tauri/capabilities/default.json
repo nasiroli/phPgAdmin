@@ -1,0 +1,53 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "default",
+    "description": "Capability for the main window",
+    "windows": ["main"],
+    "permissions": [
+        "core:default",
+        "core:event:default",
+        "shell:allow-open",
+        "dialog:default",
+        "notification:default",
+        "store:default",
+        "process:default",
+        "clipboard-manager:allow-read-text",
+        "clipboard-manager:allow-write-text",
+        {
+            "identifier": "fs:scope",
+            "allow": [
+                { "path": "$DOCUMENT" },
+                { "path": "$DOCUMENT/**" },
+                { "path": "$DOWNLOAD" },
+                { "path": "$DOWNLOAD/**" },
+                { "path": "$APPDATA" },
+                { "path": "$APPDATA/**" },
+                { "path": "$APPCACHE" },
+                { "path": "$APPCACHE/**" },
+                { "path": "$TEMP" },
+                { "path": "$TEMP/**" }
+            ]
+        },
+        "fs:default",
+        "fs:allow-read",
+        "fs:allow-write",
+        "fs:allow-exists",
+        "fs:allow-mkdir",
+        "fs:allow-remove",
+        "fs:allow-rename",
+        "fs:allow-copy-file",
+        "fs:allow-stat",
+        "fs:allow-read-dir",
+        "fs:allow-read-file",
+        "fs:allow-write-file",
+        "opener:default",
+        "os:default",
+        "http:default",
+        "deep-link:default",
+        "upload:default",
+        "geolocation:allow-check-permissions",
+        "geolocation:allow-request-permissions",
+        "geolocation:allow-get-current-position",
+        "geolocation:allow-watch-position"
+    ]
+}

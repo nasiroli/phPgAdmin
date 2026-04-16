@@ -1,0 +1,22 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "no_unused_imports": true,
+        "ordered_imports": true,
+        "phpdoc_align": true,
+        "phpdoc_order": true,
+        "single_line_comment_style": true,
+        "single_quote": true,
+        "yoda_style": true,
+        "simplified_null_return": true,
+        "array_indentation": true,
+        "statement_indentation": true,
+        "binary_operator_spaces": {
+            "default": "single_space",
+            "operators": {
+                "=>": "align_single_space_minimal"
+            }
+        }
+    }
+}
+

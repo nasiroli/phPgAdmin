@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{{ $title ?? 'Laravel' }}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @vite(['resources/css/app.css'])
+    @livewireStyles
+    <style>:root{--nb-safe-top:env(safe-area-inset-top,0px);--nb-safe-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen" style="padding-top: env(safe-area-inset-top)">
+
+    <main>
+        {{ $slot }}
+    </main>
+
+    @livewireScripts
+
+    <script id="__nb-shell-config" type="application/json">@json($shellConfig ?? [])</script>
+</body>
+</html>
