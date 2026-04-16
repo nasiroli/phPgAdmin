@@ -551,11 +551,11 @@ new #[Title('Workspace')] class extends Component
 <div class="space-y-8">
     <div class="flex flex-wrap items-start justify-between gap-6">
         <div>
-            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-emerald-500/90">Workspace</p>
-            <h1 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-50">Query &amp; browse</h1>
-            <p class="mt-2 text-sm text-zinc-400">{{ $c->server->host }} · {{ $c->username }}</p>
+            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-pg-blue-base/90 dark:text-pg-blue-light/90">Workspace</p>
+            <h1 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Query &amp; browse</h1>
+            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{{ $c->server->host }} · {{ $c->username }}</p>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             <button type="button" wire:click="testConnection" class="ui-btn-secondary px-3 py-2 text-sm">
                 {{ svg('hugeicons-test-tube', 'h-4 w-4 shrink-0') }}
                 Test connection
@@ -564,11 +564,14 @@ new #[Title('Workspace')] class extends Component
                 {{ svg('hugeicons-dashboard-square-01', 'h-4 w-4 shrink-0') }}
                 Dashboard
             </a>
+            <div class="shrink-0">
+                <x-theme-toggle />
+            </div>
         </div>
     </div>
 
     @if ($statusMessage)
-        <div class="rounded-xl border border-emerald-500/20 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-100/95">{{ $statusMessage }}</div>
+        <div class="rounded-xl border border-pg-blue-light/25 bg-pg-blue-dark/10 px-4 py-3 text-sm text-pg-blue-dark dark:border-pg-blue-light/30 dark:bg-pg-blue-base/20 dark:text-pg-blue-light/95">{{ $statusMessage }}</div>
     @endif
     @if ($errorMessage)
         <div class="rounded-xl border border-red-500/20 bg-red-950/35 px-4 py-3 text-sm text-red-200/95">{{ $errorMessage }}</div>
@@ -592,13 +595,14 @@ new #[Title('Workspace')] class extends Component
                 @endforeach
             </select>
         </div>
-        <div class="space-y-2">
+        <div class="space-y-2 flex flex-col">
             <label class="ui-label">Table</label>
             <input type="text" wire:model.live.debounce.400ms="tbl" placeholder="table_name" class="ui-field w-40 font-mono" />
         </div>
+
         <div class="flex items-end pb-0.5">
-            <label class="inline-flex cursor-pointer items-center gap-2.5 text-sm text-zinc-300">
-                <input type="checkbox" wire:model.live="allowWrites" class="rounded border-zinc-300 bg-white text-emerald-600 focus:ring-emerald-500/30 dark:border-white/15 dark:bg-zinc-950 dark:text-emerald-500" />
+            <label class="inline-flex cursor-pointer items-center gap-2.5 text-sm text-zinc-700 dark:text-zinc-300">
+                <input type="checkbox" wire:model.live="allowWrites" class="rounded border-zinc-300 bg-white text-pg-blue-base accent-pg-blue-base focus:ring-pg-blue-light/30 dark:border-white/15 dark:bg-zinc-950 dark:text-pg-blue-light" />
                 Allow writes
             </label>
         </div>
@@ -614,7 +618,7 @@ new #[Title('Workspace')] class extends Component
                 'sql' => ['label' => 'SQL', 'icon' => 'hugeicons-sql'],
                 'ops' => ['label' => 'Operations', 'icon' => 'hugeicons-settings'],
             ] as $key => $tab)
-                <button type="button" wire:click="setTab('{{ $key }}')" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm transition {{ $activeTab === $key ? 'bg-white/[0.08] font-medium text-zinc-50 shadow-sm' : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200' }}">
+                <button type="button" wire:click="setTab('{{ $key }}')" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm transition {{ $activeTab === $key ? 'bg-zinc-200/90 font-medium text-zinc-900 shadow-sm dark:bg-white/[0.08] dark:text-zinc-50' : 'text-zinc-600 hover:bg-zinc-200/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/[0.04] dark:hover:text-zinc-200' }}">
                     {{ svg($tab['icon'], 'h-4 w-4 shrink-0 opacity-90') }}
                     {{ $tab['label'] }}
                 </button>
@@ -623,12 +627,12 @@ new #[Title('Workspace')] class extends Component
 
         @if ($activeTab === 'browse' && $browseColumns !== null)
             <div class="flex flex-wrap items-center gap-2">
-                <span class="text-sm text-zinc-400">Rows: {{ $totalRows }}</span>
-                <button type="button" wire:click="gotoPage({{ $browsePage - 1 }})" @if($browsePage <= 1) disabled @endif class="inline-flex items-center gap-1 rounded border border-zinc-200 dark:border-white/10 px-2 py-1 text-sm disabled:opacity-40">
+                <span class="text-sm text-zinc-600 dark:text-zinc-400">Rows: {{ $totalRows }}</span>
+                <button type="button" wire:click="gotoPage({{ $browsePage - 1 }})" @if($browsePage <= 1) disabled @endif class="inline-flex items-center gap-1 rounded border border-zinc-200 px-2 py-1 text-sm text-zinc-800 disabled:opacity-40 dark:border-white/10 dark:text-zinc-200">
                     {{ svg('hugeicons-arrow-left-01', 'h-4 w-4 shrink-0') }}
                     Prev
                 </button>
-                <button type="button" wire:click="gotoPage({{ $browsePage + 1 }})" class="inline-flex items-center gap-1 rounded border border-zinc-200 dark:border-white/10 px-2 py-1 text-sm">
+                <button type="button" wire:click="gotoPage({{ $browsePage + 1 }})" class="inline-flex items-center gap-1 rounded border border-zinc-200 px-2 py-1 text-sm text-zinc-800 dark:border-white/10 dark:text-zinc-200">
                     Next
                     {{ svg('hugeicons-arrow-right-01', 'h-4 w-4 shrink-0') }}
                 </button>
@@ -647,7 +651,7 @@ new #[Title('Workspace')] class extends Component
                                 <th class="w-10 px-2"></th>
                             @endif
                             @foreach ($browseColumns as $col)
-                                <th class="px-3 py-2 text-left text-zinc-300">{{ $col }}</th>
+                                <th class="px-3 py-2 text-left text-zinc-700 dark:text-zinc-300">{{ $col }}</th>
                             @endforeach
                             <th class="px-2"></th>
                         </tr>
@@ -664,7 +668,7 @@ new #[Title('Workspace')] class extends Component
                                     @php($cell = CellValueFormatter::format($row[$col] ?? null))
                                     <td class="max-w-lg min-w-[8rem] align-top px-3 py-2 font-mono text-xs">
                                         @if ($cell['kind'] === 'json')
-                                            <pre class="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded border border-zinc-200/80 dark:border-white/[0.06] bg-zinc-50 dark:bg-zinc-950/80 p-2 text-[11px] leading-snug"><code class="language-json text-zinc-100" data-table-hl>{{ $cell['plain'] }}</code></pre>
+                                            <pre class="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded border border-zinc-200/80 dark:border-white/[0.06] bg-zinc-50 dark:bg-zinc-950/80 p-2 text-[11px] leading-snug"><code class="language-json text-zinc-900 dark:text-zinc-100" data-table-hl>{{ $cell['plain'] }}</code></pre>
                                         @else
                                             <span class="block max-w-full truncate" title="{{ $cell['plain'] }}">{{ $cell['plain'] }}</span>
                                         @endif
@@ -672,7 +676,7 @@ new #[Title('Workspace')] class extends Component
                                 @endforeach
                                 <td class="px-2">
                                     @if (count($pkColumns) > 0)
-                                        <button type="button" wire:click="openEdit({{ $idx }})" class="inline-flex items-center gap-1 text-emerald-400 hover:underline">
+                                        <button type="button" wire:click="openEdit({{ $idx }})" class="inline-flex items-center gap-1 text-pg-blue-base hover:underline dark:text-pg-blue-light">
                                             {{ svg('hugeicons-pencil-edit-01', 'h-4 w-4 shrink-0') }}
                                             Edit
                                         </button>
@@ -695,7 +699,7 @@ new #[Title('Workspace')] class extends Component
                                 <td class="px-3 py-2 font-mono text-xs">{{ $col->column_name }}</td>
                                 <td class="px-3 py-2">{{ $col->udt_name }}</td>
                                 <td class="px-3 py-2 text-center">{{ $col->is_nullable }}</td>
-                                <td class="px-3 py-2 text-xs text-zinc-400">{{ $col->column_default }}</td>
+                                <td class="px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400">{{ $col->column_default }}</td>
                                 <td class="px-2">
                                     <button type="button" wire:click="dropColumn(@js($col->column_name))" wire:confirm="Drop column?" class="inline-flex items-center gap-1 text-red-400 hover:underline">
                                         {{ svg('hugeicons-waste', 'h-4 w-4 shrink-0') }}
@@ -712,7 +716,7 @@ new #[Title('Workspace')] class extends Component
                 <input wire:model="newColType" placeholder="type e.g. text" class="rounded border border-zinc-200 dark:border-white/10 bg-white px-2 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" />
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="newColNullable" /> nullable</label>
                 <input wire:model="newColDefault" placeholder="default (optional)" class="rounded border border-zinc-200 dark:border-white/10 bg-white px-2 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" />
-                <button type="button" wire:click="addColumn" class="inline-flex items-center justify-center gap-2 rounded bg-emerald-700 px-3 py-2 text-sm md:col-span-4">
+                <button type="button" wire:click="addColumn" class="inline-flex items-center justify-center gap-2 rounded bg-pg-blue-dark px-3 py-2 text-sm hover:bg-pg-blue-base md:col-span-4">
                     {{ svg('hugeicons-plus-sign', 'h-4 w-4 shrink-0') }}
                     Add column
                 </button>
@@ -727,7 +731,7 @@ new #[Title('Workspace')] class extends Component
                         <input type="text" wire:model="insertValues.{{ $col->column_name }}" class="mt-1 w-full rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" />
                     </div>
                 @endforeach
-                <button type="button" wire:click="runInsert" class="inline-flex items-center gap-2 rounded bg-emerald-600 px-4 py-2 text-sm">
+                <button type="button" wire:click="runInsert" class="inline-flex items-center gap-2 rounded bg-pg-blue-base px-4 py-2 text-sm hover:bg-pg-blue-light">
                     {{ svg('hugeicons-insert-row', 'h-4 w-4 shrink-0') }}
                     Insert
                 </button>
@@ -739,9 +743,10 @@ new #[Title('Workspace')] class extends Component
                 @foreach ($indexRows as $ix)
                     <li class="flex flex-wrap items-start justify-between gap-2 rounded border border-zinc-200/80 dark:border-white/[0.06] p-3 text-sm">
                         <div>
-                            <div class="font-mono text-emerald-400">{{ $ix->indexname }}</div>
-                            <pre class="mt-1 max-w-full overflow-x-auto rounded border border-zinc-200/80 dark:border-white/[0.06] bg-zinc-50 dark:bg-zinc-950/80 p-2 text-xs"><code class="language-sql text-zinc-200" data-table-hl>{{ $ix->indexdef }}</code></pre>
+                            <div class="font-mono text-pg-blue-base dark:text-pg-blue-light">{{ $ix->indexname }}</div>
+                            <pre class="mt-1 max-w-full overflow-x-auto rounded border border-zinc-200/80 dark:border-white/[0.06] bg-zinc-50 dark:bg-zinc-950/80 p-2 text-xs"><code class="language-sql text-zinc-800 dark:text-zinc-200" data-table-hl>{{ $ix->indexdef }}</code></pre>
                         </div>
+
                         <button type="button" wire:click="dropIndex(@js($ix->indexname))" wire:confirm="Drop index?" class="inline-flex shrink-0 items-center gap-1 text-red-400">
                             {{ svg('hugeicons-waste', 'h-4 w-4 shrink-0') }}
                             Drop
@@ -752,7 +757,7 @@ new #[Title('Workspace')] class extends Component
             <div class="mt-4 flex flex-wrap gap-2">
                 <input wire:model="newIndexName" placeholder="index name" class="rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" />
                 <input wire:model="newIndexCols" placeholder="col1, col2" class="rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" />
-                <button type="button" wire:click="createIndex" class="inline-flex items-center gap-2 rounded bg-emerald-700 px-3 py-2 text-sm">
+                <button type="button" wire:click="createIndex" class="inline-flex items-center gap-2 rounded bg-pg-blue-dark px-3 py-2 text-sm hover:bg-pg-blue-base">
                     {{ svg('hugeicons-plus-sign', 'h-4 w-4 shrink-0') }}
                     Create index
                 </button>
@@ -762,7 +767,7 @@ new #[Title('Workspace')] class extends Component
         @if ($activeTab === 'sql')
             <textarea id="workspace-sql-textarea" wire:model.debounce.400ms="sql" class="sr-only" rows="1" cols="1" tabindex="-1" aria-hidden="true"></textarea>
             <div wire:ignore data-cm-sql-host class="min-h-[220px] overflow-hidden rounded-lg border border-zinc-200 dark:border-white/10"></div>
-            <button type="button" wire:click="runSql" class="mt-2 inline-flex items-center gap-2 rounded bg-emerald-600 px-4 py-2 text-sm">
+            <button type="button" wire:click="runSql" class="mt-2 inline-flex items-center gap-2 rounded bg-pg-blue-base px-4 py-2 text-sm hover:bg-pg-blue-light">
                 {{ svg('hugeicons-play', 'h-4 w-4 shrink-0') }}
                 Run
             </button>
@@ -794,7 +799,7 @@ new #[Title('Workspace')] class extends Component
         @if ($activeTab === 'ops')
             <div class="space-y-6">
                 <div class="rounded-lg border border-zinc-200/80 dark:border-white/[0.06] p-4">
-                    <h3 class="font-medium text-white">New table</h3>
+                    <h3 class="font-medium text-zinc-900 dark:text-white">New table</h3>
                     <input wire:model="newTableName" placeholder="table name" class="mt-2 rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" />
                     @foreach ($newTableCols as $i => $row)
                         <div class="mt-2 flex flex-wrap gap-2">
@@ -803,17 +808,17 @@ new #[Title('Workspace')] class extends Component
                             <label class="text-sm"><input type="checkbox" wire:model="newTableCols.{{ $i }}.nullable" /> null</label>
                         </div>
                     @endforeach
-                    <button type="button" wire:click="addNewTableColumnRow" class="mt-2 inline-flex items-center gap-1 text-sm text-emerald-400">
+                    <button type="button" wire:click="addNewTableColumnRow" class="mt-2 inline-flex items-center gap-1 text-sm text-pg-blue-base dark:text-pg-blue-light">
                         {{ svg('hugeicons-plus-sign', 'h-4 w-4 shrink-0') }}
                         Add column
                     </button>
-                    <button type="button" wire:click="createTable" class="mt-3 inline-flex items-center gap-2 rounded bg-emerald-600 px-4 py-2 text-sm">
+                    <button type="button" wire:click="createTable" class="mt-3 inline-flex items-center gap-2 rounded bg-pg-blue-base px-4 py-2 text-sm hover:bg-pg-blue-light">
                         {{ svg('hugeicons-plus-sign', 'h-4 w-4 shrink-0') }}
                         Create table
                     </button>
                 </div>
                 <div class="flex flex-wrap gap-3">
-                    <button type="button" wire:click="truncateTable" wire:confirm="Truncate this table?" class="inline-flex items-center gap-2 rounded border border-amber-800 bg-amber-950/40 px-4 py-2 text-sm text-amber-200">
+                    <button type="button" wire:click="truncateTable" wire:confirm="Truncate this table?" class="inline-flex items-center gap-2 rounded border border-pg-orange-dark bg-pg-orange-dark/10 px-4 py-2 text-sm text-pg-orange-light">
                         {{ svg('hugeicons-eraser', 'h-4 w-4 shrink-0') }}
                         Truncate
                     </button>
@@ -825,13 +830,13 @@ new #[Title('Workspace')] class extends Component
             </div>
         @endif
     @else
-        <p class="text-zinc-500">Pick schema and table above, or use the sidebar. SQL tab works without a selected table.</p>
+        <p class="text-zinc-600 dark:text-zinc-500">Pick schema and table above, or use the sidebar. SQL tab works without a selected table.</p>
     @endif
 
     @if ($showEditModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" wire:click.self="$set('showEditModal', false)">
-            <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-900 p-6 shadow-xl">
-                <h3 class="text-lg font-medium text-white">Edit row</h3>
+            <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-zinc-200 dark:border-white/10 bg-white p-6 shadow-xl dark:bg-zinc-900">
+                <h3 class="text-lg font-medium text-zinc-900 dark:text-white">Edit row</h3>
                 <div class="mt-4 space-y-3">
                     @foreach ($editValues as $k => $v)
                         <div>
@@ -845,11 +850,11 @@ new #[Title('Workspace')] class extends Component
                     @endforeach
                 </div>
                 <div class="mt-6 flex gap-2">
-                    <button type="button" wire:click="saveEdit" class="inline-flex items-center gap-2 rounded bg-emerald-600 px-4 py-2 text-sm">
+                    <button type="button" wire:click="saveEdit" class="inline-flex items-center gap-2 rounded bg-pg-blue-base px-4 py-2 text-sm hover:bg-pg-blue-light">
                         {{ svg('hugeicons-floppy-disk', 'h-4 w-4 shrink-0') }}
                         Save
                     </button>
-                    <button type="button" wire:click="$set('showEditModal', false)" class="inline-flex items-center gap-2 rounded border border-zinc-300 dark:border-white/15 px-4 py-2 text-sm">
+                    <button type="button" wire:click="$set('showEditModal', false)" class="inline-flex items-center gap-2 rounded border border-zinc-300 px-4 py-2 text-sm text-zinc-800 dark:border-white/15 dark:text-zinc-200">
                         {{ svg('hugeicons-cancel-01', 'h-4 w-4 shrink-0') }}
                         Cancel
                     </button>

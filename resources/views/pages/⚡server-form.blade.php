@@ -58,8 +58,15 @@ new #[Title('Server')] class extends Component
 @endphp
 
 <div class="mx-auto max-w-lg">
-    <p class="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-emerald-500/90">Servers</p>
-    <h1 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-50">{{ $heading }}</h1>
+    <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-pg-blue-base/90 dark:text-pg-blue-light/90">Servers</p>
+            <h1 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">{{ $heading }}</h1>
+        </div>
+        <div class="shrink-0 pt-0.5">
+            <x-theme-toggle />
+        </div>
+    </div>
 
     <form wire:submit="save" class="ui-surface mt-8 space-y-5 p-6 md:p-8">
         <div class="space-y-2">

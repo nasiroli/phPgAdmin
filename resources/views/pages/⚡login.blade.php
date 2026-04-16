@@ -37,7 +37,7 @@ new #[Layout('components.layouts.auth')] class extends Component
 <div class="flex min-h-screen w-full flex-col items-center justify-center p-6">
     <div class="ui-surface w-full max-w-md space-y-8 p-8 md:p-10">
         <div class="text-center">
-            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-emerald-500/90">{{ config('app.name') }}</p>
+            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-pg-blue-base/90 dark:text-pg-blue-light/90">{{ config('app.name') }}</p>
             <h1 class="mt-3 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Sign in</h1>
             <p class="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">Enter the desktop password to manage PostgreSQL connections.</p>
         </div>

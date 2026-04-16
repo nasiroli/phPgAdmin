@@ -41,7 +41,7 @@
             class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-zinc-800 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/80"
             :class="mode === 'light' ? 'bg-zinc-100 dark:bg-zinc-800/80' : ''"
         >
-            {{ svg('hugeicons-sun', 'h-4 w-4 shrink-0 text-amber-500') }}
+            {{ svg('hugeicons-sun', 'h-4 w-4 shrink-0 text-pg-orange-light') }}
             Light
         </button>
         <button
@@ -51,7 +51,7 @@
             class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-zinc-800 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/80"
             :class="mode === 'dark' ? 'bg-zinc-100 dark:bg-zinc-800/80' : ''"
         >
-            {{ svg('hugeicons-moon', 'h-4 w-4 shrink-0 text-indigo-400') }}
+            {{ svg('hugeicons-moon', 'h-4 w-4 shrink-0 text-pg-blue-dark') }}
             Dark
         </button>
     </div>

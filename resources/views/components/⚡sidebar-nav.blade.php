@@ -258,7 +258,7 @@ new class extends Component
 ?>
 
 <div class="flex min-h-0 flex-1 flex-col text-sm">
-    <a wire:navigate href="{{ url('/') }}" class="mb-4 flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-medium text-emerald-600/95 transition hover:bg-zinc-200/60 dark:text-emerald-400/95 dark:hover:bg-white/[0.04]">
+    <a wire:navigate href="{{ url('/') }}" class="mb-4 flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-medium text-pg-blue-base/95 transition hover:bg-zinc-200/60 dark:text-pg-blue-light/95 dark:hover:bg-white/[0.04]">
         {{ svg('hugeicons-dashboard-square-01', 'h-4 w-4 shrink-0') }}
         Dashboard
     </a>
@@ -291,7 +291,7 @@ new class extends Component
                                 <span class="truncate">{{ $conn->database }}</span>
                             </button>
                             @if (isset($connectionErrors[$conn->id]) && $connectionErrors[$conn->id])
-                                <p class="ml-4 text-xs text-amber-400/90">{{ \Illuminate\Support\Str::limit($connectionErrors[$conn->id], 80) }}</p>
+                                <p class="ml-4 text-xs text-pg-orange-light/90">{{ \Illuminate\Support\Str::limit($connectionErrors[$conn->id], 80) }}</p>
                             @endif
                             @if (in_array($conn->id, $expandedConnections))
                                 @foreach ($databasesByConnection[$conn->id] ?? [] as $db)
@@ -310,7 +310,7 @@ new class extends Component
                                             <a
                                                 wire:navigate
                                                 href="{{ $this->explorerUrl($conn->id, $db) }}"
-                                                class="ml-4 flex items-center gap-1 truncate rounded-md px-2 py-0.5 text-xs text-emerald-600/95 transition hover:bg-zinc-200/60 dark:text-emerald-400/95 dark:hover:bg-white/[0.04]"
+                                                class="ml-4 flex items-center gap-1 truncate rounded-md px-2 py-0.5 text-xs text-pg-blue-base/95 transition hover:bg-zinc-200/60 dark:text-pg-blue-light/95 dark:hover:bg-white/[0.04]"
                                             >
                                                 {{ svg('hugeicons-link-forward', 'h-3 w-3 shrink-0') }}
                                                 Open workspace

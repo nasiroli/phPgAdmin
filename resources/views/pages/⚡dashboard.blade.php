@@ -76,11 +76,11 @@ new #[Title('Connections')] class extends Component
 <div class="mx-auto max-w-5xl space-y-8">
     <div class="flex flex-wrap items-end justify-between gap-6">
         <div>
-            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-emerald-500/90">Overview</p>
+            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-pg-blue-base/90 dark:text-pg-blue-light/90">Overview</p>
             <h1 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Connections</h1>
             <p class="mt-2 max-w-lg text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">Choose a server and saved profile, then open the workspace to browse schemas and run SQL.</p>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             <a wire:navigate href="{{ url('/servers/create') }}" class="ui-btn-secondary px-4 py-2.5">
                 {{ svg('hugeicons-plus-sign', 'h-4 w-4 shrink-0') }}
                 Add server
@@ -89,6 +89,9 @@ new #[Title('Connections')] class extends Component
                 {{ svg('hugeicons-plus-sign', 'h-4 w-4 shrink-0') }}
                 Add connection
             </a>
+            <div class="shrink-0">
+                <x-theme-toggle />
+            </div>
         </div>
     </div>
 
@@ -135,7 +138,7 @@ new #[Title('Connections')] class extends Component
                         <p class="mt-2 text-sm text-zinc-500">{{ $activeServer->notes }}</p>
                     @endif
                     <div class="mt-3 flex flex-wrap gap-2">
-                        <a wire:navigate href="{{ url('/servers/'.$activeServer->id.'/edit') }}" class="inline-flex items-center gap-1.5 text-sm text-emerald-400 hover:text-emerald-300">
+                        <a wire:navigate href="{{ url('/servers/'.$activeServer->id.'/edit') }}" class="inline-flex items-center gap-1.5 text-sm text-pg-blue-base hover:text-pg-blue-dark dark:text-pg-blue-light dark:hover:text-white">
                             {{ svg('hugeicons-pencil-edit-01', 'h-4 w-4 shrink-0') }}
                             Edit server
                         </a>
@@ -158,7 +161,7 @@ new #[Title('Connections')] class extends Component
                     <h3 class="text-sm font-medium text-zinc-900 dark:text-zinc-50">{{ $activeConn->database }}</h3>
                     <p class="mt-0.5 text-xs text-zinc-500">{{ $activeConn->username }} · ssl {{ $activeConn->sslmode }}</p>
                     @if ($activeConn->last_error)
-                        <p class="mt-2 text-xs text-amber-400/90">Last error: {{ $activeConn->last_error }}</p>
+                        <p class="mt-2 text-xs text-pg-orange-light/90">Last error: {{ $activeConn->last_error }}</p>
                     @endif
                     <div class="mt-3 flex flex-wrap gap-2">
                         <a wire:navigate href="{{ url('/explorer/'.$activeConn->id) }}" class="ui-btn-primary px-3 py-2 text-sm">
