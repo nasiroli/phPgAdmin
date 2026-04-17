@@ -134,4 +134,14 @@ return [
 
     'desktop_password' => env('APP_DESKTOP_PASSWORD', 'secret'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Marketing / help links (guest welcome bar)
+    |--------------------------------------------------------------------------
+    */
+
+    'website_url' => env('APP_WEBSITE_URL'),
+
+    'about_url' => env('APP_ABOUT_URL'),
+
 ];

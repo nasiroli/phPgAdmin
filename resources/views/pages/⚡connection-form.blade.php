@@ -7,9 +7,12 @@ use App\Models\Server;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use NativeBlade\Facades\NativeBlade;
 
 new #[Title('Connection')] class extends Component
 {
+    public bool $isAuthenticated = false;
+
     public ?int $server_id = null;
 
     /** Readable label for server datalist; must match option text exactly when picking. */
@@ -30,7 +33,12 @@ new #[Title('Connection')] class extends Component
 
     public function mount(?Connection $connection = null): void
     {
+        $this->isAuthenticated = NativeBlade::getState('auth.user') !== null;
         $this->connection = $connection;
+        $this->servers = collect();
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $this->servers = Server::query()->orderBy('name')->get();
 
         $this->server_id = $connection?->server_id ?? null;
@@ -79,6 +87,9 @@ new #[Title('Connection')] class extends Component
 
     public function save(): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         if ($this->connection) {
             $rules = (new UpdateConnectionRequest)->rules();
             $this->validate($rules);
@@ -113,6 +124,12 @@ new #[Title('Connection')] class extends Component
     $heading = $connection ? 'Edit connection' : 'New connection';
 @endphp
 
+@if (! $isAuthenticated)
+    <div class="mx-auto max-w-md space-y-4 text-center">
+        <p class="text-sm text-zinc-600 dark:text-zinc-400">Sign in to manage connection profiles.</p>
+        <a wire:navigate href="{{ route('login') }}" class="ui-btn-primary inline-flex justify-center px-6 py-2.5">Log in</a>
+    </div>
+@else
 <div class="mx-auto max-w-lg">
     <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
@@ -200,3 +217,4 @@ new #[Title('Connection')] class extends Component
         </div>
     </form>
 </div>
+@endif

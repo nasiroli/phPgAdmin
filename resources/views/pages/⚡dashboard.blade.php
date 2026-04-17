@@ -5,9 +5,12 @@ use App\Models\Server;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use NativeBlade\Facades\NativeBlade;
 
 new #[Title('Connections')] class extends Component
 {
+    public bool $isAuthenticated = false;
+
     /** @var Collection<int, Server> */
     public Collection $servers;
 
@@ -22,6 +25,11 @@ new #[Title('Connections')] class extends Component
 
     public function mount(): void
     {
+        $this->isAuthenticated = NativeBlade::getState('auth.user') !== null;
+        $this->servers = collect();
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $this->loadServers();
     }
 
@@ -29,19 +37,19 @@ new #[Title('Connections')] class extends Component
     {
         $this->servers = Server::query()->with('connections')->orderBy('name')->get();
         $this->syncSelectionAfterLoad();
-        $this->hydrateDatalistLabels();
+        $this->syncDatalistLabels();
     }
 
     public function updatedSelectedServerId(): void
     {
         $server = $this->servers->firstWhere('id', $this->selectedServerId);
         $this->selectedConnectionId = $server?->connections->sortBy('database')->first()?->id;
-        $this->hydrateDatalistLabels();
+        $this->syncDatalistLabels();
     }
 
     public function updatedSelectedConnectionId(): void
     {
-        $this->hydrateDatalistLabels();
+        $this->syncDatalistLabels();
     }
 
     public function updatedServerDatalistLabel(): void
@@ -64,7 +72,7 @@ new #[Title('Connections')] class extends Component
         }
     }
 
-    public function hydrateDatalistLabels(): void
+    public function syncDatalistLabels(): void
     {
         $server = $this->servers->firstWhere('id', $this->selectedServerId);
         $this->serverDatalistLabel = $server !== null ? $this->formatServerLabel($server) : '';
@@ -125,6 +133,9 @@ new #[Title('Connections')] class extends Component
 };
 ?>
 
+@if (! $isAuthenticated)
+    {{-- Welcome + links are rendered in layouts.app for guests --}}
+@else
 <div class="mx-auto max-w-5xl space-y-8">
     <div class="flex flex-wrap items-end justify-between gap-6">
         <div>
@@ -161,7 +172,7 @@ new #[Title('Connections')] class extends Component
                         type="text"
                         list="dash-server-datalist"
                         wire:model.live.debounce.300ms="serverDatalistLabel"
-                        wire:blur="hydrateDatalistLabels"
+                        wire:blur="syncDatalistLabels"
                         class="ui-combobox"
                         autocomplete="off"
                         autocapitalize="off"
@@ -184,7 +195,7 @@ new #[Title('Connections')] class extends Component
                         type="text"
                         list="dash-connection-datalist"
                         wire:model.live.debounce.300ms="connectionDatalistLabel"
-                        wire:blur="hydrateDatalistLabels"
+                        wire:blur="syncDatalistLabels"
                         class="ui-combobox disabled:opacity-50"
                         autocomplete="off"
                         autocapitalize="off"
@@ -255,3 +266,4 @@ new #[Title('Connections')] class extends Component
         </div>
     @endif
 </div>
+@endif

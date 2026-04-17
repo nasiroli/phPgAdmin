@@ -11,9 +11,12 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use NativeBlade\Facades\NativeBlade;
 
 new #[Title('Workspace')] class extends Component
 {
+    public bool $isAuthenticated = false;
+
     #[Locked]
     public PgConnection $connection;
 
@@ -94,9 +97,33 @@ new #[Title('Workspace')] class extends Component
     /** @var array<string, string|null> */
     public array $editWherePk = [];
 
+    public bool $showColumnEditModal = false;
+
+    public string $colEditOriginal = '';
+
+    public string $colEditName = '';
+
+    public string $colEditTypeSelect = 'text';
+
+    public string $colEditTypeCustom = '';
+
+    public string $colEditVarcharLength = '255';
+
+    /** @var '1'|'0' */
+    public string $colEditNullableYes = '1';
+
+    /** @var 'keep'|'drop'|'set' */
+    public string $colEditDefaultMode = 'keep';
+
+    public string $colEditDefaultValue = '';
+
     public function mount(PgConnection $connection): void
     {
         $this->connection = $connection->load('server');
+        $this->isAuthenticated = NativeBlade::getState('auth.user') !== null;
+        if (! $this->isAuthenticated) {
+            return;
+        }
         if ($this->db === '') {
             $this->db = $connection->database;
         }
@@ -107,6 +134,9 @@ new #[Title('Workspace')] class extends Component
 
     public function updatedDb(): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $this->schema = '';
         $this->tbl = '';
         $this->reloadMeta(app(PostgresCatalogService::class));
@@ -122,6 +152,9 @@ new #[Title('Workspace')] class extends Component
 
     public function updatedSchema(): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         if ($this->schema !== '' && $this->schemas !== [] && ! in_array($this->schema, $this->schemas, true)) {
             $this->schema = '';
         }
@@ -132,17 +165,26 @@ new #[Title('Workspace')] class extends Component
 
     public function updatedTbl(): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $this->loadCurrentObject();
     }
 
     public function setTab(string $tab): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $this->activeTab = $tab;
         $this->loadCurrentObject();
     }
 
     public function reloadMeta(PostgresCatalogService $cat): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $this->errorMessage = null;
         [$dbs, $e1] = $cat->listDatabases($this->connection, $this->db);
         if ($e1 !== null) {
@@ -164,6 +206,9 @@ new #[Title('Workspace')] class extends Component
 
     public function loadCurrentObject(PostgresCatalogService $cat = null, PostgresTableAdminService $admin = null): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $cat ??= app(PostgresCatalogService::class);
         $this->browseColumns = null;
         $this->browseRows = null;
@@ -214,12 +259,18 @@ new #[Title('Workspace')] class extends Component
 
     public function gotoPage(int $page): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $this->browsePage = max(1, $page);
         $this->loadBrowsePage(app(PostgresCatalogService::class));
     }
 
     public function loadBrowsePage(PostgresCatalogService $cat): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         if ($this->tbl === '' || $this->schema === '') {
             return;
         }
@@ -250,6 +301,9 @@ new #[Title('Workspace')] class extends Component
 
     public function openEdit(int $index): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if ($this->browseRows === null || ! isset($this->browseRows[$index])) {
             return;
         }
@@ -264,6 +318,9 @@ new #[Title('Workspace')] class extends Component
 
     public function saveEdit(PostgresTableAdminService $admin): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if (! $this->allowWrites) {
             $this->errorMessage = 'Enable writes to save changes.';
 
@@ -288,6 +345,9 @@ new #[Title('Workspace')] class extends Component
 
     public function deleteSelected(PostgresTableAdminService $admin): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if (! $this->allowWrites) {
             $this->errorMessage = 'Enable writes to delete rows.';
 
@@ -326,6 +386,9 @@ new #[Title('Workspace')] class extends Component
 
     public function runInsert(PostgresTableAdminService $admin): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if (! $this->allowWrites) {
             $this->errorMessage = 'Enable writes to insert.';
 
@@ -343,6 +406,9 @@ new #[Title('Workspace')] class extends Component
 
     public function addColumn(PostgresTableAdminService $admin): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if (! $this->allowWrites) {
             $this->errorMessage = 'Enable writes for DDL.';
 
@@ -371,6 +437,9 @@ new #[Title('Workspace')] class extends Component
 
     public function dropColumn(string $name, PostgresTableAdminService $admin): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if (! $this->allowWrites) {
             return;
         }
@@ -383,8 +452,132 @@ new #[Title('Workspace')] class extends Component
         }
     }
 
+    public function openColumnEdit(string $columnName, PostgresCatalogService $cat): void
+    {
+        if ($this->guestAbort()) {
+            return;
+        }
+        if ($this->tbl === '' || $this->schema === '') {
+            return;
+        }
+        $this->errorMessage = null;
+        [$cols, $err] = $cat->listColumns($this->connection, $this->db, $this->schema, $this->tbl);
+        if ($err !== null) {
+            $this->errorMessage = $err;
+
+            return;
+        }
+        $found = null;
+        foreach ($cols as $c) {
+            if ($c->column_name === $columnName) {
+                $found = $c;
+                break;
+            }
+        }
+        if ($found === null) {
+            $this->errorMessage = 'Column not found.';
+
+            return;
+        }
+        $this->colEditOriginal = $columnName;
+        $this->colEditName = $columnName;
+        $this->applyColEditTypeFromSql(PostgresCatalogService::columnTypeSqlForAlter($found));
+        $this->colEditNullableYes = ($found->is_nullable === 'YES') ? '1' : '0';
+        $this->colEditDefaultMode = 'keep';
+        $this->colEditDefaultValue = '';
+        $this->showColumnEditModal = true;
+    }
+
+    private function guestAbort(): bool
+    {
+        return ! $this->isAuthenticated;
+    }
+
+    private function applyColEditTypeFromSql(string $typeSql): void
+    {
+        $norm = strtolower(preg_replace('/\s+/', ' ', trim($typeSql)));
+        if (preg_match('/^character varying\((\d+)\)$/', $norm, $m)) {
+            $this->colEditTypeSelect = 'varchar';
+            $this->colEditVarcharLength = $m[1];
+            $this->colEditTypeCustom = '';
+
+            return;
+        }
+        $presets = [
+            'smallint', 'integer', 'bigint', 'real', 'double precision', 'boolean',
+            'text', 'bytea', 'date', 'time without time zone', 'time with time zone',
+            'timestamp without time zone', 'timestamp with time zone', 'json', 'jsonb', 'uuid',
+        ];
+        foreach ($presets as $p) {
+            if ($norm === $p) {
+                $this->colEditTypeSelect = $p;
+                $this->colEditTypeCustom = '';
+
+                return;
+            }
+        }
+        $this->colEditTypeSelect = '__custom__';
+        $this->colEditTypeCustom = trim($typeSql);
+    }
+
+    private function colEditResolvedType(): string
+    {
+        if ($this->colEditTypeSelect === '__custom__') {
+            return trim($this->colEditTypeCustom);
+        }
+        if ($this->colEditTypeSelect === 'varchar') {
+            $n = max(1, min(10485760, (int) $this->colEditVarcharLength));
+
+            return 'character varying('.$n.')';
+        }
+
+        return $this->colEditTypeSelect;
+    }
+
+    public function saveColumnEdit(PostgresTableAdminService $admin): void
+    {
+        if ($this->guestAbort()) {
+            return;
+        }
+        if (! $this->allowWrites) {
+            $this->errorMessage = 'Enable writes for DDL.';
+
+            return;
+        }
+        try {
+            PostgresIdentifier::assertValid($this->colEditName, 'Column');
+        } catch (\InvalidArgumentException $e) {
+            $this->errorMessage = $e->getMessage();
+
+            return;
+        }
+        $type = $this->colEditResolvedType();
+        $r = $admin->alterColumn(
+            $this->connection,
+            $this->db,
+            $this->schema,
+            $this->tbl,
+            $this->colEditOriginal,
+            $this->colEditName,
+            $type,
+            $this->colEditNullableYes === '1',
+            $this->colEditDefaultMode,
+            $this->colEditDefaultMode === 'set' ? $this->colEditDefaultValue : null
+        );
+        if ($r['ok']) {
+            $this->showColumnEditModal = false;
+            $this->statusMessage = 'Column updated.';
+            $this->loadCurrentObject();
+        } else {
+            $this->errorMessage = $r['error'];
+        }
+    }
+
     public function createIndex(PostgresTableAdminService $admin): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if (! $this->allowWrites) {
             return;
         }
@@ -401,6 +594,9 @@ new #[Title('Workspace')] class extends Component
 
     public function dropIndex(string $name, PostgresTableAdminService $admin): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if (! $this->allowWrites) {
             return;
         }
@@ -415,6 +611,9 @@ new #[Title('Workspace')] class extends Component
 
     public function createTable(PostgresTableAdminService $admin): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if (! $this->allowWrites || $this->schema === '') {
             return;
         }
@@ -445,6 +644,9 @@ new #[Title('Workspace')] class extends Component
 
     public function dropTable(PostgresTableAdminService $admin): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if (! $this->allowWrites || $this->tbl === '') {
             return;
         }
@@ -460,6 +662,9 @@ new #[Title('Workspace')] class extends Component
 
     public function truncateTable(PostgresTableAdminService $admin): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         if (! $this->allowWrites || $this->tbl === '') {
             return;
         }
@@ -474,11 +679,17 @@ new #[Title('Workspace')] class extends Component
 
     public function addNewTableColumnRow(): void
     {
+        if ($this->guestAbort()) {
+            return;
+        }
         $this->newTableCols[] = ['name' => '', 'type' => 'text', 'nullable' => true];
     }
 
     public function runSql(PostgresConnectionService $pg, SqlSafetyChecker $guard): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $this->statusMessage = null;
         $this->errorMessage = null;
         $sql = trim($this->sql);
@@ -529,6 +740,9 @@ new #[Title('Workspace')] class extends Component
 
     public function testConnection(PostgresConnectionService $pg): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $r = $pg->testConnection($this->connection);
         if ($r['ok']) {
             $this->statusMessage = 'Connection OK.';
@@ -543,6 +757,9 @@ new #[Title('Workspace')] class extends Component
      */
     public function syncSidebarExplorerTree(): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $this->dispatch(
             'sidebar-expand-workspace',
             connectionId: $this->connection->id,
@@ -681,7 +898,16 @@ new #[Title('Workspace')] class extends Component
                                 <th class="w-10 px-2"></th>
                             @endif
                             @foreach ($browseColumns as $col)
-                                <th class="px-3 py-2 text-left text-zinc-700 dark:text-zinc-300">{{ $col }}</th>
+                                <th class="px-3 py-2 text-left text-zinc-700 dark:text-zinc-300">
+                                    <button
+                                        type="button"
+                                        wire:click="openColumnEdit(@js($col))"
+                                        class="max-w-full truncate text-left font-medium text-pg-blue-base hover:underline dark:text-pg-blue-light"
+                                        title="Edit column"
+                                    >
+                                        {{ $col }}
+                                    </button>
+                                </th>
                             @endforeach
                             <th class="px-2"></th>
                         </tr>
@@ -726,7 +952,16 @@ new #[Title('Workspace')] class extends Component
                     <tbody>
                         @foreach ($structureColumns as $col)
                             <tr class="border-t border-zinc-200/80 dark:border-white/[0.06]">
-                                <td class="px-3 py-2 font-mono text-xs">{{ $col->column_name }}</td>
+                                <td class="px-3 py-2 font-mono text-xs">
+                                    <button
+                                        type="button"
+                                        wire:click="openColumnEdit(@js($col->column_name))"
+                                        class="text-pg-blue-base hover:underline dark:text-pg-blue-light"
+                                        title="Edit column"
+                                    >
+                                        {{ $col->column_name }}
+                                    </button>
+                                </td>
                                 <td class="px-3 py-2">{{ $col->udt_name }}</td>
                                 <td class="px-3 py-2 text-center">{{ $col->is_nullable }}</td>
                                 <td class="px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400">{{ $col->column_default }}</td>
@@ -741,6 +976,7 @@ new #[Title('Workspace')] class extends Component
                     </tbody>
                 </table>
             </div>
+
             <div class="mt-4 grid gap-2 rounded-lg border border-zinc-200/80 dark:border-white/[0.06] p-4 md:grid-cols-4">
                 <input wire:model="newColName" placeholder="name" class="rounded border border-zinc-200 dark:border-white/10 bg-white px-2 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" />
                 <input wire:model="newColType" placeholder="type e.g. text" class="rounded border border-zinc-200 dark:border-white/10 bg-white px-2 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" />
@@ -795,12 +1031,13 @@ new #[Title('Workspace')] class extends Component
         @endif
 
         @if ($activeTab === 'sql')
-            <textarea id="workspace-sql-textarea" wire:model.debounce.400ms="sql" class="sr-only" rows="1" cols="1" tabindex="-1" aria-hidden="true"></textarea>
+            <textarea id="workspace-sql-textarea" wire:model.debounce.400ms="sql" class="sr-only" rows="5" cols="1" tabindex="-1" aria-hidden="true"></textarea>
             <div wire:ignore data-cm-sql-host class="min-h-[220px] overflow-hidden rounded-lg border border-zinc-200 dark:border-white/10"></div>
             <button type="button" wire:click="runSql" class="mt-2 inline-flex items-center gap-2 rounded bg-pg-blue-base px-4 py-2 text-sm hover:bg-pg-blue-light">
                 {{ svg('hugeicons-play', 'h-4 w-4 shrink-0') }}
                 Run
             </button>
+
             @if ($browseColumns !== null && count($browseColumns) > 0)
                 <div class="mt-4 overflow-x-auto rounded-lg border border-zinc-200/80 dark:border-white/[0.06]">
                     <table class="min-w-full text-xs">
@@ -861,6 +1098,87 @@ new #[Title('Workspace')] class extends Component
         @endif
     @else
         <p class="text-zinc-600 dark:text-zinc-500">Pick schema and table above, or use the sidebar. SQL tab works without a selected table.</p>
+    @endif
+
+    @if ($showColumnEditModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" wire:click.self="$set('showColumnEditModal', false)">
+            <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-zinc-200 dark:border-white/10 bg-white p-6 shadow-xl dark:bg-zinc-900">
+                <h3 class="text-lg font-medium text-zinc-900 dark:text-white">Edit column</h3>
+                <p class="mt-1 text-xs text-zinc-500">Applies <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-950">ALTER TABLE</code> (requires writes).</p>
+                <div class="mt-4 space-y-3">
+                    <div>
+                        <label class="text-xs text-zinc-500">Name</label>
+                        <input type="text" wire:model="colEditName" class="mt-1 w-full rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm font-mono text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" autocomplete="off" />
+                    </div>
+                    <div>
+                        <label class="text-xs text-zinc-500">Data type</label>
+                        <select wire:model.live="colEditTypeSelect" class="mt-1 w-full rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+                            <option value="smallint">smallint</option>
+                            <option value="integer">integer</option>
+                            <option value="bigint">bigint</option>
+                            <option value="real">real</option>
+                            <option value="double precision">double precision</option>
+                            <option value="boolean">boolean</option>
+                            <option value="text">text</option>
+                            <option value="varchar">character varying (length)</option>
+                            <option value="bytea">bytea</option>
+                            <option value="date">date</option>
+                            <option value="time without time zone">time without time zone</option>
+                            <option value="time with time zone">time with time zone</option>
+                            <option value="timestamp without time zone">timestamp without time zone</option>
+                            <option value="timestamp with time zone">timestamp with time zone</option>
+                            <option value="json">json</option>
+                            <option value="jsonb">jsonb</option>
+                            <option value="uuid">uuid</option>
+                            <option value="__custom__">Custom…</option>
+                        </select>
+                    </div>
+                    @if ($colEditTypeSelect === 'varchar')
+                        <div>
+                            <label class="text-xs text-zinc-500">Varchar length</label>
+                            <input type="number" wire:model="colEditVarcharLength" min="1" max="10485760" class="mt-1 w-full rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" />
+                        </div>
+                    @endif
+                    @if ($colEditTypeSelect === '__custom__')
+                        <div>
+                            <label class="text-xs text-zinc-500">Custom type (PostgreSQL)</label>
+                            <input type="text" wire:model="colEditTypeCustom" placeholder="e.g. numeric(12,4)" class="mt-1 w-full rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm font-mono text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" autocomplete="off" />
+                        </div>
+                    @endif
+                    <div>
+                        <label class="text-xs text-zinc-500">Nullable</label>
+                        <select wire:model="colEditNullableYes" class="mt-1 w-full rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-zinc-500">Default</label>
+                        <select wire:model.live="colEditDefaultMode" class="mt-1 w-full rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+                            <option value="keep">Keep current default</option>
+                            <option value="drop">Remove default</option>
+                            <option value="set">Set default…</option>
+                        </select>
+                    </div>
+                    @if ($colEditDefaultMode === 'set')
+                        <div>
+                            <label class="text-xs text-zinc-500">Default expression</label>
+                            <input type="text" wire:model="colEditDefaultValue" placeholder="NULL, number, 'text', true, CURRENT_TIMESTAMP" class="mt-1 w-full rounded border border-zinc-200 dark:border-white/10 bg-white px-3 py-2 text-sm font-mono text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" autocomplete="off" />
+                        </div>
+                    @endif
+                </div>
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <button type="button" wire:click="saveColumnEdit" class="inline-flex items-center gap-2 rounded bg-pg-blue-base px-4 py-2 text-sm hover:bg-pg-blue-light">
+                        {{ svg('hugeicons-floppy-disk', 'h-4 w-4 shrink-0') }}
+                        Apply
+                    </button>
+                    <button type="button" wire:click="$set('showColumnEditModal', false)" class="inline-flex items-center gap-2 rounded border border-zinc-300 px-4 py-2 text-sm text-zinc-800 dark:border-white/15 dark:text-zinc-200">
+                        {{ svg('hugeicons-cancel-01', 'h-4 w-4 shrink-0') }}
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
     @endif
 
     @if ($showEditModal)

@@ -124,6 +124,66 @@ class PostgresTableAdminService
     }
 
     /**
+     * @param  'keep'|'drop'|'set'  $defaultMode
+     * @return array{ok:bool,error:?string}
+     */
+    public function alterColumn(
+        PgConnection $profile,
+        string $database,
+        string $schema,
+        string $table,
+        string $originalColumnName,
+        string $newColumnName,
+        string $dataType,
+        bool $nullable,
+        string $defaultMode,
+        ?string $defaultWhenSet
+    ): array {
+        PostgresIdentifier::assertValid($schema, 'Schema');
+        PostgresIdentifier::assertValid($table, 'Table');
+        PostgresIdentifier::assertValid($originalColumnName, 'Column');
+        PostgresIdentifier::assertValid($newColumnName, 'Column');
+        if (! in_array($defaultMode, ['keep', 'drop', 'set'], true)) {
+            return ['ok' => false, 'error' => 'Invalid default mode.'];
+        }
+        if (! $this->isAllowedAlterDataType($dataType)) {
+            return ['ok' => false, 'error' => 'Invalid data type.'];
+        }
+
+        $tableQl = PostgresIdentifier::qualified($schema, $table);
+        $workingName = $originalColumnName;
+        $statements = [];
+
+        if ($newColumnName !== $originalColumnName) {
+            $statements[] = 'ALTER TABLE '.$tableQl.' RENAME COLUMN '.
+                PostgresIdentifier::quote($originalColumnName).' TO '.PostgresIdentifier::quote($newColumnName);
+            $workingName = $newColumnName;
+        }
+
+        $colQl = PostgresIdentifier::quote($workingName);
+        $statements[] = 'ALTER TABLE '.$tableQl.' ALTER COLUMN '.$colQl.' TYPE '.$dataType;
+
+        if ($nullable) {
+            $statements[] = 'ALTER TABLE '.$tableQl.' ALTER COLUMN '.$colQl.' DROP NOT NULL';
+        } else {
+            $statements[] = 'ALTER TABLE '.$tableQl.' ALTER COLUMN '.$colQl.' SET NOT NULL';
+        }
+
+        if ($defaultMode === 'drop') {
+            $statements[] = 'ALTER TABLE '.$tableQl.' ALTER COLUMN '.$colQl.' DROP DEFAULT';
+        } elseif ($defaultMode === 'set') {
+            try {
+                $def = $this->sanitizeDefaultExpression($defaultWhenSet ?? '');
+            } catch (InvalidArgumentException $e) {
+                return ['ok' => false, 'error' => $e->getMessage()];
+            }
+            $statements[] = 'ALTER TABLE '.$tableQl.' ALTER COLUMN '.$colQl.' SET DEFAULT '.$def;
+        }
+
+        return $this->runDdlStatements($profile, $database, $statements);
+    }
+
+    /**
      * @return array{ok:bool,error:?string}
      */
     public function createIndex(
@@ -291,6 +351,29 @@ class PostgresTableAdminService
     }
 
     /**
+     * @param  list<string>  $statements
+     * @return array{ok:bool,error:?string}
+     */
+    private function runDdlStatements(PgConnection $profile, string $database, array $statements): array
+    {
+        if ($statements === []) {
+            return ['ok' => true, 'error' => null];
+        }
+
+        [$_, $err] = $this->connections->withConnection($profile, function (Connection $conn) use ($statements) {
+            $conn->transaction(function () use ($conn, $statements) {
+                foreach ($statements as $sql) {
+                    $conn->statement($sql);
+                }
+            });
+
+            return true;
+        }, $database);
+
+        return null === $err ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => $err];
+    }
+
+    /**
      * @param  list<string|int|float|null>  $bindings
      * @return array{ok:bool,error:?string}
      */
@@ -340,6 +423,25 @@ class PostgresTableAdminService
         $t = trim($type);
 
         return (bool) preg_match('/^[a-zA-Z][a-zA-Z0-9_]*(?:\(\s*\d+(?:\s*,\s*\d+)?\s*\))?$/', $t);
+    }
+
+    /**
+     * Multi-word types (e.g. "character varying(100)", "timestamp with time zone") for ALTER COLUMN.
+     */
+    private function isAllowedAlterDataType(string $type): bool
+    {
+        $t = trim($type);
+        if ($t === '') {
+            return false;
+        }
+        if (preg_match('/[^a-zA-Z0-9_(),\s]/', $t)) {
+            return false;
+        }
+
+        return (bool) preg_match(
+            '/^[a-zA-Z][a-zA-Z0-9_]*( [a-zA-Z][a-zA-Z0-9_]*)*(?:\(\s*\d+(?:\s*,\s*\d+)?\s*\))?$/',
+            $t
+        );
     }
 
     private function sanitizeDefaultExpression(string $raw): string

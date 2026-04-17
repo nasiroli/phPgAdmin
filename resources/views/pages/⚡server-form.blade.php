@@ -5,9 +5,12 @@ use App\Http\Requests\UpdateServerRequest;
 use App\Models\Server;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use NativeBlade\Facades\NativeBlade;
 
 new #[Title('Server')] class extends Component
 {
+    public bool $isAuthenticated = false;
+
     public string $name = 'main';
 
     public string $host = 'localhost';
@@ -20,6 +23,10 @@ new #[Title('Server')] class extends Component
 
     public function mount(?Server $server = null): void
     {
+        $this->isAuthenticated = NativeBlade::getState('auth.user') !== null;
+        if (! $this->isAuthenticated) {
+            return;
+        }
         $this->server = $server;
         $this->name = $server?->name ?? 'main';
         $this->host = $server?->host ?? 'localhost';
@@ -29,6 +36,9 @@ new #[Title('Server')] class extends Component
 
     public function save(): void
     {
+        if (! $this->isAuthenticated) {
+            return;
+        }
         if ($this->server) {
             $this->validate((new UpdateServerRequest)->rules());
             $this->server->update([
@@ -57,6 +67,12 @@ new #[Title('Server')] class extends Component
     $heading = $server ? 'Edit server' : 'New server';
 @endphp
 
+@if (! $isAuthenticated)
+    <div class="mx-auto max-w-md space-y-4 text-center">
+        <p class="text-sm text-zinc-600 dark:text-zinc-400">Sign in to manage servers.</p>
+        <a wire:navigate href="{{ route('login') }}" class="ui-btn-primary inline-flex justify-center px-6 py-2.5">Log in</a>
+    </div>
+@else
 <div class="mx-auto max-w-lg">
     <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
@@ -101,3 +117,4 @@ new #[Title('Server')] class extends Component
         </div>
     </form>
 </div>
+@endif

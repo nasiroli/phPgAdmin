@@ -73,13 +73,69 @@ class PostgresCatalogService
 
         return $this->connections->withConnection($profile, function (Connection $conn) use ($schema, $table) {
             return $conn->select(
-                'select column_name, data_type, udt_name, is_nullable, column_default, ordinal_position
+                'select column_name, data_type, udt_name, is_nullable, column_default, ordinal_position,
+                        character_maximum_length, numeric_precision, numeric_scale
                  from information_schema.columns
                  where table_schema = ? and table_name = ?
                  order by ordinal_position',
                 [$schema, $table]
             );
         }, $database);
+    }
+
+    /**
+     * Build a PostgreSQL type fragment suitable for ALTER COLUMN … TYPE from information_schema row.
+     */
+    public static function columnTypeSqlForAlter(object $row): string
+    {
+        $dt = (string) ($row->data_type ?? '');
+        $udt = (string) ($row->udt_name ?? '');
+
+        if (($dt === 'character varying' || $udt === 'varchar') && isset($row->character_maximum_length) && $row->character_maximum_length !== null) {
+            return 'character varying('.(int) $row->character_maximum_length.')';
+        }
+
+        if (($dt === 'character' || $udt === 'bpchar') && isset($row->character_maximum_length) && $row->character_maximum_length !== null) {
+            return 'character('.(int) $row->character_maximum_length.')';
+        }
+
+        if (($dt === 'numeric' || $dt === 'decimal') && isset($row->numeric_precision) && $row->numeric_precision !== null) {
+            $p = (int) $row->numeric_precision;
+            $s = isset($row->numeric_scale) && $row->numeric_scale !== null ? (int) $row->numeric_scale : 0;
+
+            return $dt.'('.$p.','.$s.')';
+        }
+
+        $map = [
+            'int2' => 'smallint',
+            'int4' => 'integer',
+            'int8' => 'bigint',
+            'float4' => 'real',
+            'float8' => 'double precision',
+            'bool' => 'boolean',
+            'text' => 'text',
+            'json' => 'json',
+            'jsonb' => 'jsonb',
+            'uuid' => 'uuid',
+            'date' => 'date',
+            'time' => 'time without time zone',
+            'timetz' => 'time with time zone',
+            'timestamp' => 'timestamp without time zone',
+            'timestamptz' => 'timestamp with time zone',
+            'interval' => 'interval',
+            'bytea' => 'bytea',
+            'varchar' => 'character varying',
+        ];
+
+        if (isset($map[$udt])) {
+            return $map[$udt];
+        }
+
+        if ($dt !== '') {
+            return $dt;
+        }
+
+        return $udt;
     }
 
     /**
