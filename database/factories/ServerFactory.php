@@ -18,9 +18,9 @@ class ServerFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->words(2, true).' PG',
-            'host' => fake()->ipv4(),
-            'port' => 5432,
+            'name'  => fake()->words(2, true).' PG',
+            'host'  => fake()->ipv4(),
+            'port'  => 5432,
             'notes' => fake()->optional()->sentence(),
         ];
     }

@@ -19,12 +19,12 @@ class ConnectionFactory extends Factory
     public function definition(): array
     {
         return [
-            'server_id' => Server::factory(),
-            'database' => 'postgres',
-            'username' => fake()->userName(),
-            'password' => 'secret',
-            'sslmode' => 'prefer',
-            'last_error' => null,
+            'server_id'         => Server::factory(),
+            'database'          => 'postgres',
+            'username'          => fake()->userName(),
+            'password'          => 'secret',
+            'sslmode'           => 'prefer',
+            'last_error'        => null,
             'last_connected_at' => null,
         ];
     }

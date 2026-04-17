@@ -13,6 +13,10 @@
 /.zed
 /auth.json
 /node_modules
+
+# Tauri / Cargo (build artifacts; never commit)
+/src-tauri/target
+
 /public/build
 /public/hot
 /public/storage

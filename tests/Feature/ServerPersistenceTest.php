@@ -15,8 +15,8 @@ it('persists server and connection profiles', function () {
 
     Connection::factory()->create([
         'server_id' => $server->id,
-        'database' => 'postgres',
-        'username' => 'u',
+        'database'  => 'postgres',
+        'username'  => 'u',
     ]);
 
     expect(Server::query()->count())->toBe(1)

@@ -15,6 +15,11 @@ new #[Title('Connections')] class extends Component
 
     public ?int $selectedConnectionId = null;
 
+    /** Datalist text (readable labels); IDs are derived when the value matches an option exactly. */
+    public string $serverDatalistLabel = '';
+
+    public string $connectionDatalistLabel = '';
+
     public function mount(): void
     {
         $this->loadServers();
@@ -24,12 +29,59 @@ new #[Title('Connections')] class extends Component
     {
         $this->servers = Server::query()->with('connections')->orderBy('name')->get();
         $this->syncSelectionAfterLoad();
+        $this->hydrateDatalistLabels();
     }
 
     public function updatedSelectedServerId(): void
     {
         $server = $this->servers->firstWhere('id', $this->selectedServerId);
         $this->selectedConnectionId = $server?->connections->sortBy('database')->first()?->id;
+        $this->hydrateDatalistLabels();
+    }
+
+    public function updatedSelectedConnectionId(): void
+    {
+        $this->hydrateDatalistLabels();
+    }
+
+    public function updatedServerDatalistLabel(): void
+    {
+        $trim = trim($this->serverDatalistLabel);
+        $match = $this->servers->first(fn (Server $s) => $this->formatServerLabel($s) === $trim);
+        if ($match !== null && $match->id !== $this->selectedServerId) {
+            $this->selectedServerId = (int) $match->id;
+        }
+    }
+
+    public function updatedConnectionDatalistLabel(): void
+    {
+        $server = $this->servers->firstWhere('id', $this->selectedServerId);
+        $connections = $server?->connections->sortBy('database') ?? collect();
+        $trim = trim($this->connectionDatalistLabel);
+        $match = $connections->first(fn (Connection $c) => $this->formatConnectionLabel($c) === $trim);
+        if ($match !== null && $match->id !== $this->selectedConnectionId) {
+            $this->selectedConnectionId = (int) $match->id;
+        }
+    }
+
+    public function hydrateDatalistLabels(): void
+    {
+        $server = $this->servers->firstWhere('id', $this->selectedServerId);
+        $this->serverDatalistLabel = $server !== null ? $this->formatServerLabel($server) : '';
+
+        $connections = $server?->connections->sortBy('database') ?? collect();
+        $conn = $connections->firstWhere('id', $this->selectedConnectionId);
+        $this->connectionDatalistLabel = $conn !== null ? $this->formatConnectionLabel($conn) : '';
+    }
+
+    public function formatServerLabel(Server $server): string
+    {
+        return "{$server->name} — {$server->host}:{$server->port}";
+    }
+
+    public function formatConnectionLabel(Connection $connection): string
+    {
+        return "{$connection->database} ({$connection->username})";
     }
 
     public function deleteConnection(int $id): void
@@ -103,30 +155,49 @@ new #[Title('Connections')] class extends Component
         <div class="ui-surface p-6 md:p-8">
             <div class="grid gap-6 sm:grid-cols-2">
                 <div class="space-y-2">
-                    <label class="ui-label">Server</label>
-                    <select wire:model.live="selectedServerId" class="ui-select">
+                    <label class="ui-label" for="dash-server-input">Server</label>
+                    <input
+                        id="dash-server-input"
+                        type="text"
+                        list="dash-server-datalist"
+                        wire:model.live.debounce.300ms="serverDatalistLabel"
+                        wire:blur="hydrateDatalistLabels"
+                        class="ui-combobox"
+                        autocomplete="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                    />
+                    <datalist id="dash-server-datalist">
                         @foreach ($servers as $server)
-                            <option value="{{ $server->id }}">{{ $server->name }} — {{ $server->host }}:{{ $server->port }}</option>
+                            <option value="{{ $this->formatServerLabel($server) }}"></option>
                         @endforeach
-                    </select>
+                    </datalist>
                 </div>
                 @php
                     $activeServer = $servers->firstWhere('id', $selectedServerId);
                     $connections = $activeServer?->connections ?? collect();
                 @endphp
                 <div class="space-y-2">
-                    <label class="ui-label">Connection</label>
-                    <select
-                        wire:model.live="selectedConnectionId"
-                        class="ui-select disabled:opacity-50"
+                    <label class="ui-label" for="dash-connection-input">Connection</label>
+                    <input
+                        id="dash-connection-input"
+                        type="text"
+                        list="dash-connection-datalist"
+                        wire:model.live.debounce.300ms="connectionDatalistLabel"
+                        wire:blur="hydrateDatalistLabels"
+                        class="ui-combobox disabled:opacity-50"
+                        autocomplete="off"
+                        autocapitalize="off"
+                        spellcheck="false"
                         @if ($connections->isEmpty()) disabled @endif
-                    >
+                    />
+                    <datalist id="dash-connection-datalist">
                         @forelse ($connections->sortBy('database') as $conn)
-                            <option value="{{ $conn->id }}">{{ $conn->database }} ({{ $conn->username }})</option>
+                            <option value="{{ $this->formatConnectionLabel($conn) }}"></option>
                         @empty
-                            <option value="">No connections for this server</option>
+                            <option value="No connections for this server"></option>
                         @endforelse
-                    </select>
+                    </datalist>
                 </div>
             </div>
 

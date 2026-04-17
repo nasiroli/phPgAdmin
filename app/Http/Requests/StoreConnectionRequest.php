@@ -20,10 +20,10 @@ class StoreConnectionRequest extends FormRequest
     {
         return [
             'server_id' => ['required', 'integer', 'exists:servers,id'],
-            'database' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string', 'max:2000'],
-            'sslmode' => ['required', Rule::in(['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full'])],
+            'database'  => ['required', 'string', 'max:255'],
+            'username'  => ['required', 'string', 'max:255'],
+            'password'  => ['required', 'string', 'max:2000'],
+            'sslmode'   => ['required', Rule::in(['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full'])],
         ];
     }
 }

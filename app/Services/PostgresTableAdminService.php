@@ -15,14 +15,14 @@ class PostgresTableAdminService
     ) {}
 
     /**
-     * @param  list<array{name:string,type:string,nullable:bool,default:?string}>  $columns
+     * @param  list<array{name:string,type:string,nullable:bool,default:?string}> $columns
      * @return array{ok:bool,error:?string}
      */
     public function createTable(PgConnection $profile, string $database, string $schema, string $table, array $columns): array
     {
         PostgresIdentifier::assertValid($schema, 'Schema');
         PostgresIdentifier::assertValid($table, 'Table');
-        if ($columns === []) {
+        if ([] === $columns) {
             return ['ok' => false, 'error' => 'Add at least one column.'];
         }
 
@@ -34,7 +34,7 @@ class PostgresTableAdminService
             }
             $null = ($col['nullable'] ?? true) ? 'NULL' : 'NOT NULL';
             $def = '';
-            if (isset($col['default']) && $col['default'] !== null && $col['default'] !== '') {
+            if (isset($col['default']) && null !== $col['default'] && '' !== $col['default']) {
                 try {
                     $def = ' DEFAULT '.$this->sanitizeDefaultExpression($col['default']);
                 } catch (InvalidArgumentException $e) {
@@ -95,7 +95,7 @@ class PostgresTableAdminService
 
         $null = $nullable ? 'NULL' : 'NOT NULL';
         $def = '';
-        if ($default !== null && $default !== '') {
+        if (null !== $default && '' !== $default) {
             try {
                 $def = ' DEFAULT '.$this->sanitizeDefaultExpression($default);
             } catch (InvalidArgumentException $e) {
@@ -161,7 +161,7 @@ class PostgresTableAdminService
     }
 
     /**
-     * @param  array<string, string|null>  $data  column => raw value string or null
+     * @param  array<string, string|null>   $data column => raw value string or null
      * @return array{ok:bool,error:?string}
      */
     public function insertRow(PgConnection $profile, string $database, string $schema, string $table, array $data): array
@@ -169,7 +169,7 @@ class PostgresTableAdminService
         PostgresIdentifier::assertValid($schema, 'Schema');
         PostgresIdentifier::assertValid($table, 'Table');
         [$colsMeta, $err] = $this->catalog->listColumns($profile, $database, $schema, $table);
-        if ($err !== null) {
+        if (null !== $err) {
             return ['ok' => false, 'error' => $err];
         }
         $allowed = [];
@@ -186,9 +186,9 @@ class PostgresTableAdminService
             PostgresIdentifier::assertValid($key, 'Column');
             $columns[] = PostgresIdentifier::quote($key);
             $placeholders[] = '?';
-            $bindings[] = $value === '' ? null : $value;
+            $bindings[] = '' === $value ? null : $value;
         }
-        if ($columns === []) {
+        if ([] === $columns) {
             return ['ok' => false, 'error' => 'No valid columns to insert.'];
         }
 
@@ -199,8 +199,8 @@ class PostgresTableAdminService
     }
 
     /**
-     * @param  array<string, string|null>  $data
-     * @param  array<string, string|null>  $wherePk  primary key column => value
+     * @param  array<string, string|null>   $data
+     * @param  array<string, string|null>   $wherePk primary key column => value
      * @return array{ok:bool,error:?string}
      */
     public function updateRow(PgConnection $profile, string $database, string $schema, string $table, array $data, array $wherePk): array
@@ -208,10 +208,10 @@ class PostgresTableAdminService
         PostgresIdentifier::assertValid($schema, 'Schema');
         PostgresIdentifier::assertValid($table, 'Table');
         [$pkCols, $err] = $this->catalog->primaryKeyColumns($profile, $database, $schema, $table);
-        if ($err !== null) {
+        if (null !== $err) {
             return ['ok' => false, 'error' => $err];
         }
-        if ($pkCols === []) {
+        if ([] === $pkCols) {
             return ['ok' => false, 'error' => 'Table has no primary key; cannot update rows safely.'];
         }
 
@@ -223,9 +223,9 @@ class PostgresTableAdminService
             }
             PostgresIdentifier::assertValid($col, 'Column');
             $sets[] = PostgresIdentifier::quote($col).' = ?';
-            $bindings[] = $value === '' ? null : $value;
+            $bindings[] = '' === $value ? null : $value;
         }
-        if ($sets === []) {
+        if ([] === $sets) {
             return ['ok' => false, 'error' => 'Nothing to update.'];
         }
 
@@ -244,7 +244,7 @@ class PostgresTableAdminService
     }
 
     /**
-     * @param  list<array<string, string|null>>  $wherePks  list of pk column => value maps
+     * @param  list<array<string, string|null>> $wherePks list of pk column => value maps
      * @return array{ok:bool,error:?string}
      */
     public function deleteRows(PgConnection $profile, string $database, string $schema, string $table, array $wherePks): array
@@ -252,10 +252,10 @@ class PostgresTableAdminService
         PostgresIdentifier::assertValid($schema, 'Schema');
         PostgresIdentifier::assertValid($table, 'Table');
         [$pkCols, $err] = $this->catalog->primaryKeyColumns($profile, $database, $schema, $table);
-        if ($err !== null) {
+        if (null !== $err) {
             return ['ok' => false, 'error' => $err];
         }
-        if ($pkCols === []) {
+        if ([] === $pkCols) {
             return ['ok' => false, 'error' => 'Table has no primary key; cannot delete rows safely.'];
         }
 
@@ -287,7 +287,7 @@ class PostgresTableAdminService
             return true;
         }, $database);
 
-        return $err === null ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => $err];
+        return null === $err ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => $err];
     }
 
     /**
@@ -302,7 +302,7 @@ class PostgresTableAdminService
             return true;
         }, $database);
 
-        return $err === null ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => $err];
+        return null === $err ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => $err];
     }
 
     /**
@@ -317,7 +317,7 @@ class PostgresTableAdminService
             return true;
         }, $database);
 
-        return $err === null ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => $err];
+        return null === $err ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => $err];
     }
 
     /**
@@ -332,7 +332,7 @@ class PostgresTableAdminService
             return true;
         }, $database);
 
-        return $err === null ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => $err];
+        return null === $err ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => $err];
     }
 
     private function isAllowedDataType(string $type): bool
@@ -345,7 +345,7 @@ class PostgresTableAdminService
     private function sanitizeDefaultExpression(string $raw): string
     {
         $t = trim($raw);
-        if (strtoupper($t) === 'NULL') {
+        if ('NULL' === strtoupper($t)) {
             return 'NULL';
         }
         if (preg_match('/^-?\d+(\.\d+)?$/', $t)) {

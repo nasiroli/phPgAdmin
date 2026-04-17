@@ -110,12 +110,21 @@ new #[Title('Workspace')] class extends Component
         $this->schema = '';
         $this->tbl = '';
         $this->reloadMeta(app(PostgresCatalogService::class));
+        if ($this->databases !== [] && $this->db !== '' && ! in_array($this->db, $this->databases, true)) {
+            $this->db = $this->databases[0] ?? $this->connection->database;
+            $this->schema = '';
+            $this->tbl = '';
+            $this->reloadMeta(app(PostgresCatalogService::class));
+        }
         $this->loadCurrentObject();
         $this->syncSidebarExplorerTree();
     }
 
     public function updatedSchema(): void
     {
+        if ($this->schema !== '' && $this->schemas !== [] && ! in_array($this->schema, $this->schemas, true)) {
+            $this->schema = '';
+        }
         $this->tbl = '';
         $this->loadCurrentObject();
         $this->syncSidebarExplorerTree();
@@ -579,21 +588,42 @@ new #[Title('Workspace')] class extends Component
 
     <div class="ui-surface flex flex-wrap gap-4 p-5 md:gap-6 md:p-6">
         <div class="space-y-2">
-            <label class="ui-label">Database</label>
-            <select wire:model.live="db" class="ui-select">
+            <label class="ui-label" for="workspace-db-input">Database</label>
+            <input
+                id="workspace-db-input"
+                type="text"
+                list="workspace-db-datalist"
+                wire:model.live.debounce.400ms="db"
+                class="ui-combobox min-w-48"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+            />
+            <datalist id="workspace-db-datalist">
                 @foreach ($databases as $d)
                     <option value="{{ $d }}">{{ $d }}</option>
                 @endforeach
-            </select>
+            </datalist>
         </div>
+        
         <div class="space-y-2">
-            <label class="ui-label">Schema</label>
-            <select wire:model.live="schema" class="ui-select">
-                <option value="">—</option>
+            <label class="ui-label" for="workspace-schema-input">Schema</label>
+            <input
+                id="workspace-schema-input"
+                type="text"
+                list="workspace-schema-datalist"
+                wire:model.live.debounce.400ms="schema"
+                class="ui-combobox min-w-[12rem]"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="—"
+            />
+            <datalist id="workspace-schema-datalist">
                 @foreach ($schemas as $s)
-                    <option value="{{ $s }}">{{ $s }}</option>
+                    <option value="{{ $s }}"></option>
                 @endforeach
-            </select>
+            </datalist>
         </div>
         <div class="space-y-2 flex flex-col">
             <label class="ui-label">Table</label>

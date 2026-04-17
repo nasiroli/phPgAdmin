@@ -54,8 +54,8 @@ class PostgresCatalogService
             foreach ($rows as $r) {
                 $out[] = [
                     'schema' => $r->schema,
-                    'name' => $r->name,
-                    'type' => $r->type,
+                    'name'   => $r->name,
+                    'type'   => $r->type,
                 ];
             }
 

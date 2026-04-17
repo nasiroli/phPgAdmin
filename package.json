@@ -4,6 +4,10 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
+        "build:wasm": "vite build --config vite.wasm.config.js",
+        "build:desktop": "npm run build && npm run build:wasm && php artisan nativeblade:config && npx tauri build && node scripts/ci/collect-desktop-artifacts.mjs",
+        "ci:prepare-release": "node scripts/ci/prepare-release-build.mjs",
+        "ci:collect-artifacts": "node scripts/ci/collect-desktop-artifacts.mjs",
         "dev": "vite",
         "tauri": "tauri"
     },

@@ -13,7 +13,7 @@ final class CellValueFormatter
 {
     public static function format(mixed $value): array
     {
-        if ($value === null) {
+        if (null === $value) {
             return ['kind' => 'text', 'plain' => ''];
         }
 
@@ -23,19 +23,19 @@ final class CellValueFormatter
 
         if (is_array($value) || is_object($value)) {
             return [
-                'kind' => 'json',
+                'kind'  => 'json',
                 'plain' => self::prettyJson($value),
             ];
         }
 
         if (is_string($value)) {
             $trim = trim($value);
-            if ($trim !== '' && ($trim[0] === '{' || $trim[0] === '[') && function_exists('json_validate') && json_validate($value)) {
+            if ('' !== $trim && ('{' === $trim[0] || '[' === $trim[0]) && function_exists('json_validate') && json_validate($value)) {
                 try {
                     $decoded = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
 
                     return [
-                        'kind' => 'json',
+                        'kind'  => 'json',
                         'plain' => self::prettyJson($decoded),
                     ];
                 } catch (\JsonException) {

@@ -11,6 +11,7 @@ class Server extends Model
 {
     /** @use HasFactory<ServerFactory> */
     use HasFactory;
+
     /**
      * @var list<string>
      */

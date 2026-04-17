@@ -29,7 +29,7 @@ class SqlSafetyChecker
     {
         $normalized = $this->normalize($sql);
 
-        if ($normalized === '') {
+        if ('' === $normalized) {
             return false;
         }
 
@@ -50,7 +50,7 @@ class SqlSafetyChecker
     {
         $trimmed = trim($sql);
 
-        if ($trimmed === '') {
+        if ('' === $trimmed) {
             return '';
         }
 

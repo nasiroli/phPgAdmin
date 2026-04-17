@@ -1,0 +1,156 @@
+# Desktop (Tauri) release builds for Linux, Windows, and macOS.
+#
+# Recommended flow (semver):
+#   1. Merge work into main.
+#   2. Bump version in git (optional for CI — the workflow patches AppServiceProvider + tauri.conf.json from the tag).
+#   3. Tag and push: git tag v1.2.3 && git push origin v1.2.3
+#
+# Manual run: Actions → "Desktop release" → Run workflow → enter x.y.z (no "v").
+#
+# Artifacts are attached to a GitHub Release with per-platform installers.
+
+name: Desktop release
+
+on:
+    push:
+        tags:
+            - 'v[0-9]*.[0-9]*.[0-9]*'
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Semver x.y.z (no v prefix)'
+                required: true
+                type: string
+
+concurrency:
+    group: desktop-release-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: write
+
+defaults:
+    run:
+        shell: bash
+
+jobs:
+    version:
+        runs-on: ubuntu-latest
+        outputs:
+            version: ${{ steps.resolve.outputs.version }}
+        steps:
+            - name: Resolve semver
+              id: resolve
+              run: |
+                  if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+                    VER="${{ github.event.inputs.version }}"
+                  else
+                    VER="${GITHUB_REF#refs/tags/v}"
+                  fi
+                  if ! [[ "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+                    echo "Invalid version: $VER"
+                    exit 1
+                  fi
+                  echo "version=$VER" >> "$GITHUB_OUTPUT"
+                  echo "Release version: $VER"
+
+    build-desktop:
+        needs: version
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - os: ubuntu-22.04
+                      platform: linux
+                    - os: windows-latest
+                      platform: windows
+                    - os: macos-latest
+                      platform: macos
+        runs-on: ${{ matrix.os }}
+        env:
+            RELEASE_VERSION: ${{ needs.version.outputs.version }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.3'
+                  extensions: sqlite, mbstring, xml, curl, ctype, tokenizer, bcmath, fileinfo, intl, openssl, pdo_sqlite
+                  coverage: none
+
+            - name: Set up Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: npm
+
+            - name: Set up Rust
+              uses: dtolnay/rust-toolchain@stable
+
+            - name: Cache Cargo
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                      src-tauri/target
+                  key: ${{ runner.os }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-cargo-
+
+            - name: Install Linux dependencies
+              if: matrix.platform == 'linux'
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y \
+                    libwebkit2gtk-4.1-dev build-essential curl wget file \
+                    libssl-dev libgtk-3-dev libayatana-appindicator3-dev \
+                    librsvg2-dev patchelf
+
+            - name: Install Composer dependencies
+              run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+            - name: Prepare Laravel environment
+              run: |
+                  cp .env.example .env
+                  php artisan key:generate --force
+                  touch database/database.sqlite
+                  php artisan migrate --force --no-interaction
+
+            - name: Apply release version to PHP and Tauri config
+              run: npm run ci:prepare-release
+
+            - name: Install npm dependencies
+              run: npm install
+
+            - name: Build desktop bundles
+              run: npm run build:desktop
+
+            - name: Upload desktop artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: desktop-${{ matrix.platform }}
+                  path: build/desktop/*
+                  if-no-files-found: error
+
+    publish-release:
+        needs: [version, build-desktop]
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/download-artifact@v4
+              with:
+                  path: release-assets
+                  pattern: desktop-*
+                  merge-multiple: true
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: v${{ needs.version.outputs.version }}
+                  name: phPgAdmin v${{ needs.version.outputs.version }}
+                  target_commitish: ${{ github.sha }}
+                  files: release-assets/*
+                  generate_release_notes: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

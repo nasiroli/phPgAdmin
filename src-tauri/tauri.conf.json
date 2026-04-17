@@ -1,8 +1,8 @@
 {
     "$schema": "https://raw.githubusercontent.com/nicedoc/tauri/dev/tooling/cli/schema.json",
-    "productName": "Laravel",
-    "version": "0.1.0",
-    "identifier": "com.laravel.app",
+    "productName": "phPgAdmin",
+    "version": "1.0.0",
+    "identifier": "com.nasiroli.phppgadmin",
     "build": {
         "beforeDevCommand": "npx vite --config vite.wasm.config.js",
         "devUrl": "http://localhost:1420",
@@ -11,7 +11,7 @@
     "app": {
         "windows": [
             {
-                "title": "Laravel",
+                "title": "phPgAdmin",
                 "width": 1200,
                 "height": 800,
                 "center": true,

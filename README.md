@@ -52,7 +52,7 @@ Copy `.env.example` to `.env` and adjust as needed:
 |----------|---------|
 | `APP_NAME` | Application title |
 | `APP_DESKTOP_PASSWORD` | Password for the in-app login screen (not a Postgres password) |
-| `APP_URL` | **Must match** the URL you open in the browser when *not* using NativeBlade (e.g. `http://127.0.0.1:8000`, `https://phppgadmin.test`, or your Local/Herd site URL). Used for URL generation and Vite. |
+| `APP_URL` | **Must match** where the UI is served. For **`php artisan nativeblade:dev`** use the Vite WASM origin (default **`http://127.0.0.1:1420`**). For browser/`php artisan serve` or Herd, use that URL instead (e.g. `http://127.0.0.1:8000`). Wrong values cause broken links and 404s (e.g. `http://localhost/login` on port 80). |
 | `DB_CONNECTION` | Laravel app database (`sqlite` by default; stores servers, connections, sessions) |
 
 Connection credentials for PostgreSQL are stored in the app database (passwords encrypted); they are separate from `APP_DESKTOP_PASSWORD`.

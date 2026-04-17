@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Connection as PgConnection;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use PDOException;
 use RuntimeException;
@@ -30,26 +31,34 @@ class PostgresConnectionService
         }
 
         $server = $profile->server;
-        if ($server === null) {
+        if (null === $server) {
             throw new RuntimeException('Connection profile is missing its server.');
         }
 
         $database = $databaseOverride ?? $profile->database;
         $name = $this->dynamicName($profile, $databaseOverride);
 
+        $password = $profile->tryDecryptPassword();
+        if ($password === null) {
+            return [
+                $name,
+                'The stored connection password cannot be decrypted (often after APP_KEY changed). Edit this connection, enter the password again, and save.',
+            ];
+        }
+
         config([
             "database.connections.{$name}" => [
-                'driver' => 'pgsql',
-                'host' => $server->host,
-                'port' => $server->port,
-                'database' => $database,
-                'username' => $profile->username,
-                'password' => $profile->password,
-                'charset' => 'utf8',
-                'prefix' => '',
+                'driver'         => 'pgsql',
+                'host'           => $server->host,
+                'port'           => $server->port,
+                'database'       => $database,
+                'username'       => $profile->username,
+                'password'       => $password,
+                'charset'        => 'utf8',
+                'prefix'         => '',
                 'prefix_indexes' => true,
-                'search_path' => 'public',
-                'sslmode' => $profile->sslmode,
+                'search_path'    => 'public',
+                'sslmode'        => $profile->sslmode,
             ],
         ]);
 
@@ -63,14 +72,14 @@ class PostgresConnectionService
      *
      * @template T
      *
-     * @param  callable(\Illuminate\Database\Connection): T  $callback
+     * @param  callable(Connection): T      $callback
      * @return array{0: T|null, 1: ?string} [result, error]
      */
     public function withConnection(PgConnection $profile, callable $callback, ?string $databaseOverride = null): array
     {
         [$name, $driverError] = $this->registerConnection($profile, $databaseOverride);
 
-        if ($driverError !== null) {
+        if (null !== $driverError) {
             return [null, $driverError];
         }
 
@@ -99,9 +108,9 @@ class PostgresConnectionService
             return true;
         });
 
-        if ($error === null && $result === true) {
+        if (null === $error && true === $result) {
             $profile->forceFill([
-                'last_error' => null,
+                'last_error'        => null,
                 'last_connected_at' => now(),
             ])->save();
         } else {
@@ -111,7 +120,7 @@ class PostgresConnectionService
         }
 
         return [
-            'ok' => $error === null,
+            'ok'    => null === $error,
             'error' => $error,
         ];
     }

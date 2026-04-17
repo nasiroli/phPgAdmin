@@ -12,7 +12,10 @@ new #[Title('Connection')] class extends Component
 {
     public ?int $server_id = null;
 
-    public string $database = 'posgres';
+    /** Readable label for server datalist; must match option text exactly when picking. */
+    public string $serverDatalistLabel = '';
+
+    public string $database = 'postgres';
 
     public string $username = 'postgres';
 
@@ -33,8 +36,45 @@ new #[Title('Connection')] class extends Component
         $this->server_id = $connection?->server_id ?? null;
         $this->database = $connection?->database ?? 'postgres';
         $this->username = $connection?->username ?? 'postgres';
-        $this->password = $connection?->password ?? 'password';
+        if ($connection) {
+            $plain = $connection->tryDecryptPassword();
+            $this->password = $plain === null ? '' : $plain;
+            if ($plain === null) {
+                session()->flash('conn_decrypt', 'Stored password could not be decrypted (for example after APP_KEY changed). Enter the password again and save.');
+            }
+        } else {
+            $this->password = 'password';
+        }
         $this->sslmode = $connection?->sslmode ?? 'prefer';
+        $this->syncServerDatalistLabelFromId();
+    }
+
+    public function updatedServerDatalistLabel(): void
+    {
+        $trim = trim($this->serverDatalistLabel);
+        $match = $this->servers->first(fn (Server $s) => $this->formatServerOptionLabel($s) === $trim);
+        if ($match !== null) {
+            $this->server_id = (int) $match->id;
+        }
+    }
+
+    public function syncServerDatalistLabelFromId(): void
+    {
+        $s = $this->servers->firstWhere('id', $this->server_id);
+        $this->serverDatalistLabel = $s !== null ? $this->formatServerOptionLabel($s) : '';
+    }
+
+    public function formatServerOptionLabel(Server $server): string
+    {
+        return "{$server->name} ({$server->host})";
+    }
+
+    public function updatedSslmode(): void
+    {
+        $allowed = ['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full'];
+        if (! in_array($this->sslmode, $allowed, true)) {
+            $this->sslmode = 'prefer';
+        }
     }
 
     public function save(): void
@@ -85,14 +125,30 @@ new #[Title('Connection')] class extends Component
     </div>
 
     <form wire:submit="save" class="ui-surface mt-8 space-y-5 p-6 md:p-8">
+        @if (session('conn_decrypt'))
+            <div class="rounded-xl border border-amber-500/30 bg-amber-950/30 px-4 py-3 text-sm text-amber-100/95" role="status">
+                {{ session('conn_decrypt') }}
+            </div>
+        @endif
         <div class="space-y-2">
-            <label class="ui-label">Server</label>
-            <select wire:model="server_id" class="ui-select">
-                <option value="">Choose server…</option>
+            <label class="ui-label" for="conn-server-input">Server</label>
+            <input
+                id="conn-server-input"
+                type="text"
+                list="conn-server-datalist"
+                wire:model.live.debounce.300ms="serverDatalistLabel"
+                wire:blur="syncServerDatalistLabelFromId"
+                class="ui-combobox"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="Choose server…"
+            />
+            <datalist id="conn-server-datalist">
                 @foreach ($servers as $s)
-                    <option value="{{ $s->id }}">{{ $s->name }} ({{ $s->host }})</option>
+                    <option value="{{ $this->formatServerOptionLabel($s) }}"></option>
                 @endforeach
-            </select>
+            </datalist>
             @error('server_id') <p class="text-sm text-red-400/95">{{ $message }}</p> @enderror
             @if ($servers->isEmpty())
                 <p class="text-sm text-pg-orange-light/90">Create a server first.</p>
@@ -114,15 +170,22 @@ new #[Title('Connection')] class extends Component
             @error('password') <p class="text-sm text-red-400/95">{{ $message }}</p> @enderror
         </div>
         <div class="space-y-2">
-            <label class="ui-label">SSL mode</label>
-            <select wire:model="sslmode" class="ui-select">
-                <option value="disable">disable</option>
-                <option value="allow">allow</option>
-                <option value="prefer">prefer</option>
-                <option value="require">require</option>
-                <option value="verify-ca">verify-ca</option>
-                <option value="verify-full">verify-full</option>
-            </select>
+            <label class="ui-label" for="conn-ssl-input">SSL mode</label>
+            <input
+                id="conn-ssl-input"
+                type="text"
+                list="conn-ssl-datalist"
+                wire:model.live.debounce.200ms="sslmode"
+                class="ui-combobox"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+            />
+            <datalist id="conn-ssl-datalist">
+                @foreach (['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full'] as $mode)
+                    <option value="{{ $mode }}"></option>
+                @endforeach
+            </datalist>
             @error('sslmode') <p class="text-sm text-red-400/95">{{ $message }}</p> @enderror
         </div>
         <div class="flex flex-wrap gap-3 pt-2">
